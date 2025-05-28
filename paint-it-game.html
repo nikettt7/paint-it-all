@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood It Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .grid-size-select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .grid-size-select:hover {
+            border-color: #667eea;
+        }
+
+        .reset-btn {
+            padding: 8px 16px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #ff5252;
+        }
+
+        .score-info {
+            position: relative;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .moves-counter {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .offset-display {
+            position: absolute;
+            top: -5px;
+            right: 20px;
+            font-size: 14px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .game-grid {
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 500px;
+            margin: 0 auto 25px;
+            border: 3px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            display: grid;
+            gap: 1px;
+            background: #333;
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .grid-cell:hover {
+            filter: brightness(1.1);
+        }
+
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .color-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .color-btn:active {
+            transform: scale(0.95);
+        }
+
+        .color-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .overlay-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .overlay h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .overlay.win h2 {
+            color: #4caf50;
+        }
+
+        .overlay.lose h2 {
+            color: #f44336;
+        }
+
+        .overlay button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .overlay button:hover {
+            background: #5a67d8;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .color-btn {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .color-palette {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>Flood It</h1>
+            <div class="game-controls">
+                <select class="grid-size-select" id="gridSizeSelect">
+                    <option value="12">12×12</option>
+                    <option value="18">18×18</option>
+                    <option value="21" selected>21×21</option>
+                    <option value="24">24×24</option>
+                </select>
+                <button class="reset-btn" id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="score-info">
+            <div class="moves-counter" id="movesCounter">0 / 25</div>
+            <div class="offset-display" id="offsetDisplay">+2</div>
+        </div>
+
+        <div class="game-grid" id="gameGrid"></div>
+
+        <div class="color-palette" id="colorPalette">
+            <button class="color-btn" data-color="#e06f8b" style="background-color: #e06f8b;"></button>
+            <button class="color-btn" data-color="#d84b20" style="background-color: #d84b20;"></button>
+            <button class="color-btn" data-color="#e0de40" style="background-color: #e0de40;"></button>
+            <button class="color-btn" data-color="#7f8c24" style="background-color: #7f8c24;"></button>
+            <button class="color-btn" data-color="#45adc7" style="background-color: #45adc7;"></button>
+            <button class="color-btn" data-color="#554e9c" style="background-color: #554e9c;"></button>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="gameOverlay">
+        <div class="overlay-content">
+            <h2 id="overlayTitle">Game Over!</h2>
+            <p id="overlayMessage">Better luck next time!</p>
+            <button onclick="gameController.newGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Model - Handles game state and logic
+        class FloodItModel {
+            constructor(size = 21) {
+                this.size = size;
+                this.colors = ['#e06f8b', '#d84b20', '#e0de40', '#7f8c24', '#45adc7', '#554e9c'];
+                this.grid = [];
+                this.moves = 0;
+                this.maxMoves = this.calculateMaxMoves(size);
+                this.gameState = 'playing'; // 'playing', 'won', 'lost'
+                this.initializeGrid();
+            }
+
+            // Calculate maximum moves based on grid size
+            calculateMaxMoves(size) {
+                // Formula: roughly size * 1.2, with minimum offset
+                const base = Math.floor(size * 1.2);
+                const offset = Math.max(2, Math.floor(size / 10));
+                return base + offset;
+            }
+
+            // Initialize grid with random colors
+            initializeGrid() {
+                this.grid = [];
+                for (let row = 0; row < this.size; row++) {
+                    this.grid[row] = [];
+                    for (let col = 0; col < this.size; col++) {
+                        const randomColorIndex = Math.floor(Math.random() * this.colors.length);
+                        this.grid[row][col] = this.colors[randomColorIndex];
+                    }
+                }
+                this.moves = 0;
+                this.gameState = 'playing';
+            }
+
+            // Get current color of top-left cell (the origin)
+            getCurrentColor() {
+                return this.grid[0][0];
+            }
+
+            // Flood fill algorithm - changes connected region to new color
+            floodFill(newColor) {
+                if (this.gameState !== 'playing' || newColor === this.getCurrentColor()) {
+                    return false; // Invalid move
+                }
+
+                const originalColor = this.getCurrentColor();
+                const visited = Array(this.size).fill().map(() => Array(this.size).fill(false));
+                
+                // Recursive flood fill function
+                const fill = (row, col) => {
+                    // Check boundaries and if already visited
+                    if (row < 0 || row >= this.size || col < 0 || col >= this.size || visited[row][col]) {
+                        return;
+                    }
+                    
+                    // Check if current cell matches original color
+                    if (this.grid[row][col] !== originalColor) {
+                        return;
+                    }
+
+                    // Mark as visited and change color
+                    visited[row][col] = true;
+                    this.grid[row][col] = newColor;
+
+                    // Recursively fill adjacent cells (4-directional)
+                    fill(row - 1, col); // Up
+                    fill(row + 1, col); // Down
+                    fill(row, col - 1); // Left
+                    fill(row, col + 1); // Right
+                };
+
+                // Start flood fill from top-left corner
+                fill(0, 0);
+                
+                // Increment move counter
+                this.moves++;
+                
+                // Check win/lose conditions
+                this.checkGameState();
+                
+                return true; // Valid move made
+            }
+
+            // Check if game is won or lost
+            checkGameState() {
+                // Check if entire grid is one color (win condition)
+                const firstColor = this.grid[0][0];
+                let isAllSameColor = true;
+                
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        if (this.grid[row][col] !== firstColor) {
+                            isAllSameColor = false;
+                            break;
+                        }
+                    }
+                    if (!isAllSameColor) break;
+                }
+
+                if (isAllSameColor) {
+                    this.gameState = 'won';
+                } else if (this.moves >= this.maxMoves) {
+                    this.gameState = 'lost';
+                }
+            }
+
+            // Get offset value for display
+            getOffset() {
+                return this.maxMoves - Math.floor(this.size * 1.0);
+            }
+        }
+
+        // Game View - Handles DOM manipulation and rendering
+        class FloodItView {
+            constructor() {
+                this.gameGrid = document.getElementById('gameGrid');
+                this.movesCounter = document.getElementById('movesCounter');
+                this.offsetDisplay = document.getElementById('offsetDisplay');
+                this.colorPalette = document.getElementById('colorPalette');
+                this.overlay = document.getElementById('gameOverlay');
+                this.overlayTitle = document.getElementById('overlayTitle');
+                this.overlayMessage = document.getElementById('overlayMessage');
+            }
+
+            // Render the game grid
+            renderGrid(model) {
+                // Set grid template based on size
+                this.gameGrid.style.gridTemplateColumns = `repeat(${model.size}, 1fr)`;
+                
+                // Clear existing grid
+                this.gameGrid.innerHTML = '';
+                
+                // Create grid cells
+                for (let row = 0; row < model.size; row++) {
+                    for (let col = 0; col < model.size; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        cell.style.backgroundColor = model.grid[row][col];
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        this.gameGrid.appendChild(cell);
+                    }
+                }
+            }
+
+            // Update moves counter display
+            updateMovesCounter(moves, maxMoves) {
+                this.movesCounter.textContent = `${moves} / ${maxMoves}`;
+            }
+
+            // Update offset display
+            updateOffset(offset) {
+                this.offsetDisplay.textContent = `+${offset}`;
+            }
+
+            // Update color palette (disable current color)
+            updateColorPalette(currentColor) {
+                const colorButtons = this.colorPalette.querySelectorAll('.color-btn');
+                colorButtons.forEach(btn => {
+                    if (btn.dataset.color === currentColor) {
+                        btn.classList.add('disabled');
+                    } else {
+                        btn.classList.remove('disabled');
+                    }
+                });
+            }
+
+            // Show game over overlay
+            showGameOver(won, moves, maxMoves) {
+                if (won) {
+                    this.overlay.className = 'overlay win';
+                    this.overlayTitle.textContent = 'You Win!';
+                    this.overlayMessage.textContent = `Completed in ${moves} moves!`;
+                } else {
+                    this.overlay.className = 'overlay lose';
+                    this.overlayTitle.textContent = 'Game Over!';
+                    this.overlayMessage.textContent = `Used all ${maxMoves} moves. Try again!`;
+                }
+                this.overlay.classList.remove('hidden');
+            }
+
+            // Hide game over overlay
+            hideGameOver() {
+                this.overlay.classList.add('hidden');
+            }
+        }
+
+        // Game Controller - Handles user interactions and coordinates model/view
+        class FloodItController {
+            constructor() {
+                this.model = new FloodItModel(21); // Default 21x21 grid
+                this.view = new FloodItView();
+                this.initializeEventListeners();
+                this.updateView();
+            }
+
+            // Set up event listeners
+            initializeEventListeners() {
+                // Color palette clicks
+                this.view.colorPalette.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('color-btn') && !e.target.classList.contains('disabled')) {
+                        this.handleColorClick(e.target.dataset.color);
+                    }
+                });
+
+                // Grid size change
+                document.getElementById('gridSizeSelect').addEventListener('change', (e) => {
+                    this.changeGridSize(parseInt(e.target.value));
+                });
+
+                // Reset button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.newGame();
+                });
+            }
+
+            // Handle color button click
+            handleColorClick(color) {
+                const moveSuccess = this.model.floodFill(color);
+                if (moveSuccess) {
+                    this.updateView();
+                    
+                    // Check for game end
+                    if (this.model.gameState === 'won') {
+                        setTimeout(() => {
+                            this.view.showGameOver(true, this.model.moves, this.model.maxMoves);
+                        }, 300);
+                    } else if (this.model.gameState === 'lost') {
+                        setTimeout(() => {
+                            this.view.showGameOver(false, this.model.moves, this.model.maxMoves);
+                        }, 300);
+                    }
+                }
+            }
+
+            // Change grid size
+            changeGridSize(size) {
+                this.model = new FloodItModel(size);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Start new game with current settings
+            newGame() {
+                const currentSize = this.model.size;
+                this.model = new FloodItModel(currentSize);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Update all view elements
+            updateView() {
+                this.view.renderGrid(this.model);
+                this.view.updateMovesCounter(this.model.moves, this.model.maxMoves);
+                this.view.updateOffset(this.model.getOffset());
+                this.view.updateColorPalette(this.model.getCurrentColor());
+            }
+        }
+
+        // Initialize game when page loads
+        let gameController;
+        document.addEventListener('DOMContentLoaded', () => {
+            gameController = new FloodItController();
+        });
+    </script>
+</body>
+</html>

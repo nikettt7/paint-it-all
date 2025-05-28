@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood It Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .game-container {
+            position: relative;
+            max-width: 600px;
+            width: 90%;
+            margin: 20px;
+        }
+
+        .header {
+            position: relative;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .moves {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .offset {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .grid-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+        }
+
+        #grid-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+
+        .palette {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="moves">0 / 25</div>
+            <div class="offset">+0</div>
+        </div>
+        <div class="grid-container">
+            <canvas id="grid-canvas"></canvas>
+            <div id="overlay" class="overlay">
+                <div class="message"></div>
+            </div>
+        </div>
+        <div class="palette">
+            <button class="color-btn" data-color="0"></button>
+            <button class="color-btn" data-color="1"></button>
+            <button class="color-btn" data-color="2"></button>
+            <button class="color-btn" data-color="3"></button>
+            <button class="color-btn" data-color="4"></button>
+            <button class="color-btn" data-color="5"></button>
+        </div>
+    </div>
+
+    <script>
+        class GameModel {
+            constructor(size = 21) {
+                this.size = size;
+                this.maxMoves = 25;
+                this.moves = 0;
+                this.offset = 0;
+                this.colors = [
+                    '#e06f8b', '#d84b20', '#e0de40',
+                    '#7f8c24', '#45adc7', '#554e9c'
+                ];
+                this.grid = [];
+                this.initGrid();
+            }
+
+            initGrid() {
+                // Create random grid with uniform color distribution
+                for (let i = 0; i < this.size; i++) {
+                    this.grid[i] = [];
+                    for (let j = 0; j < this.size; j++) {
+                        this.grid[i][j] = Math.floor(Math.random() * 6);
+                    }
+                }
+            }
+
+            floodFill(newColor) {
+                const target = this.grid[0][0];
+                if (target === newColor) return 0;
+
+                // BFS flood fill algorithm
+                const queue = [[0, 0]];
+                const visited = Array.from({length: this.size}, 
+                    () => new Array(this.size).fill(false));
+                let count = 0;
+
+                while (queue.length > 0) {
+                    const [x, y] = queue.shift();
+                    if (visited[x][y] || this.grid[x][y] !== target) continue;
+                    
+                    visited[x][y] = true;
+                    count++;
+                    
+                    // Check all 4-directional neighbors
+                    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                    for (const [dx, dy] of directions) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < this.size && 
+                            ny >= 0 && ny < this.size && !visited[nx][ny]) {
+                            queue.push([nx, ny]);
+                        }
+                    }
+                }
+
+                // Update grid colors
+                for (let i = 0; i < this.size; i++) {
+                    for (let j = 0; j < this.size; j++) {
+                        if (visited[i][j]) this.grid[i][j] = newColor;
+                    }
+                }
+
+                return count;
+            }
+
+            isWin() {
+                const target = this.grid[0][0];
+                return this.grid.flat().every(c => c === target);
+            }
+        }
+
+        class GameView {
+            constructor(model) {
+                this.model = model;
+                this.canvas = document.getElementById('grid-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.movesElement = document.querySelector('.moves');
+                this.offsetElement = document.querySelector('.offset');
+                this.overlay = document.getElementById('overlay');
+                this.setupPalette();
+                this.initCanvas();
+            }
+
+            initCanvas() {
+                // Responsive canvas setup
+                const container = this.canvas.parentElement;
+                const updateSize = () => {
+                    const size = Math.min(container.clientWidth, container.clientHeight);
+                    this.canvas.width = size;
+                    this.canvas.height = size;
+                    this.drawGrid();
+                };
+                updateSize();
+                window.addEventListener('resize', updateSize);
+            }
+
+            drawGrid() {
+                const cellSize = this.canvas.width / this.model.size;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for (let i = 0; i < this.model.size; i++) {
+                    for (let j = 0; j < this.model.size; j++) {
+                        this.ctx.fillStyle = this.model.colors[this.model.grid[i][j]];
+                        this.ctx.fillRect(
+                            j * cellSize,
+                            i * cellSize,
+                            cellSize,
+                            cellSize
+                        );
+                    }
+                }
+            }
+
+            setupPalette() {
+                document.querySelectorAll('.color-btn').forEach((btn, i) => {
+                    btn.style.backgroundColor = this.model.colors[i];
+                });
+            }
+
+            updateUI(offset) {
+                this.movesElement.textContent = 
+                    `${this.model.moves} / ${this.model.maxMoves}`;
+                this.offsetElement.textContent = `+${offset}`;
+            }
+
+            showOverlay(message) {
+                this.overlay.querySelector('.message').textContent = message;
+                this.overlay.style.display = 'flex';
+            }
+        }
+
+        class GameController {
+            constructor(model, view) {
+                this.model = model;
+                this.view = view;
+                this.setupListeners();
+                this.view.drawGrid();
+            }
+
+            setupListeners() {
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (this.model.moves >= this.model.maxMoves || 
+                            this.model.isWin()) return;
+                            
+                        const newColor = parseInt(btn.dataset.color);
+                        const currentColor = this.model.grid[0][0];
+                        
+                        if (newColor !== currentColor) {
+                            const offset = this.model.floodFill(newColor);
+                            this.model.moves++;
+                            this.model.offset = offset;
+                            
+                            this.view.drawGrid();
+                            this.view.updateUI(offset);
+                            
+                            if (this.model.isWin()) {
+                                this.view.showOverlay('You Win!');
+                            } else if (this.model.moves >= this.model.maxMoves) {
+                                this.view.showOverlay('Game Over');
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        // Initialize game
+        const model = new GameModel();
+        const view = new GameView(model);
+        const controller = new GameController(model, view);
+    </script>
+</body>
+</html>
