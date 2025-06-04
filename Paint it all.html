@@ -3,294 +3,794 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flood It Game</title>
+    <title>Paint It All Game</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
+            padding: 20px;
+            color: white;
         }
 
         .game-container {
-            position: relative;
-            max-width: 600px;
-            width: 90%;
-            margin: 20px;
+            background: rgba(0, 0, 20, 0.85);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            max-width: 650px;
+            width: 100%;
+            border: 2px solid #5566cc;
         }
 
-        .header {
-            position: relative;
-            margin-bottom: 1rem;
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3a4a9c;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .game-mode-select, .grid-size-select {
+            padding: 10px 15px;
+            border: 2px solid #5566cc;
+            border-radius: 8px;
+            background: rgba(30, 40, 120, 0.7);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .game-mode-select:hover, .grid-size-select:hover {
+            background: rgba(50, 70, 180, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .reset-btn {
+            padding: 10px 20px;
+            background: linear-gradient(to right, #ff6b6b, #ff8e53);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .reset-btn:hover {
+            background: linear-gradient(to right, #ff5252, #ff7a45);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.3);
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            background: rgba(30, 40, 120, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4455aa;
+        }
+
+        .player-stats {
             text-align: center;
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
         }
 
-        .moves {
-            font-size: 1.2rem;
+        .player-stats.active {
+            background: rgba(80, 100, 220, 0.3);
+            border: 2px solid #6677ee;
+            box-shadow: 0 0 15px rgba(100, 120, 255, 0.5);
+        }
+
+        .player-label {
+            font-size: 18px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .player-moves {
+            font-size: 24px;
             font-weight: bold;
+            color: #ffcc66;
         }
 
-        .offset {
-            position: absolute;
-            right: 0;
-            top: 0;
-            font-size: 0.8rem;
-            color: #666;
-        }
-
-        .grid-container {
-            position: relative;
-            width: 100%;
-            padding-top: 100%;
-        }
-
-        #grid-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 2px solid #333;
-            border-radius: 4px;
-        }
-
-        .palette {
+        .player-colors {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .player-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .game-grid {
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 500px;
+            margin: 0 auto 25px;
+            border: 3px solid #4455aa;
+            border-radius: 8px;
+            overflow: hidden;
+            display: grid;
+            gap: 1px;
+            background: #333;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .grid-cell:hover {
+            filter: brightness(1.2);
+            transform: scale(1.05);
+            z-index: 1;
+        }
+
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .color-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
+            border: 3px solid white;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
         .color-btn:hover {
-            transform: scale(1.1);
+            transform: scale(1.15);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        .color-btn:active {
+            transform: scale(0.95);
+        }
+
+        .color-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+
+        .color-btn.player1 {
+            border: 3px solid #ff9966;
+            box-shadow: 0 0 10px #ff9966;
+        }
+
+        .color-btn.player2 {
+            border: 3px solid #66ccff;
+            box-shadow: 0 0 10px #66ccff;
+        }
+
+        .color-btn.not-turn {
+            filter: grayscale(70%);
+            opacity: 0.7;
         }
 
         .overlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0,0,0,0.9);
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
-            font-size: 2rem;
-            font-weight: bold;
-            border-radius: 4px;
-            display: none;
+            z-index: 1000;
+        }
+
+        .overlay-content {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 2px solid #5566cc;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .overlay h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ffcc66;
+        }
+
+        .overlay.win h2 {
+            color: #4caf50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .overlay.lose h2 {
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .overlay p {
+            font-size: 20px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            color: #e0e0ff;
+        }
+
+        .overlay .player-stats {
+            background: rgba(0, 0, 30, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px auto;
+            max-width: 300px;
+        }
+
+        .overlay button {
+            padding: 14px 32px;
+            font-size: 18px;
+            background: linear-gradient(to right, #00c9ff, #92fe9d);
+            color: #1a2a6c;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .overlay button:hover {
+            background: linear-gradient(to right, #00b4ff, #7dfa8d);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
         }
 
         .hidden {
             display: none;
         }
+
+        .instructions {
+            background: rgba(30, 40, 120, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid #4455aa;
+        }
+
+        .instructions h3 {
+            color: #ffcc66;
+            margin-bottom: 8px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .game-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .color-btn {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .color-palette {
+                gap: 8px;
+            }
+            
+            .player-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div class="header">
-            <div class="moves">0 / 25</div>
-            <div class="offset">+0</div>
-        </div>
-        <div class="grid-container">
-            <canvas id="grid-canvas"></canvas>
-            <div id="overlay" class="overlay">
-                <div class="message"></div>
+        <div class="game-header">
+            <h1>Paint It All!</h1>
+            <div class="game-controls">
+                <select class="game-mode-select" id="gameModeSelect">
+                    <option value="1">1 Player</option>
+                    <option value="2">2 Players</option>
+                </select>
+                <select class="grid-size-select" id="gridSizeSelect">
+                    <option value="12">12×12</option>
+                    <option value="18">18×18</option>
+                    <option value="21" selected>21×21</option>
+                    <option value="24">24×24</option>
+                </select>
+                <button class="reset-btn" id="resetBtn">New Game</button>
             </div>
         </div>
-        <div class="palette">
-            <button class="color-btn" data-color="0"></button>
-            <button class="color-btn" data-color="1"></button>
-            <button class="color-btn" data-color="2"></button>
-            <button class="color-btn" data-color="3"></button>
-            <button class="color-btn" data-color="4"></button>
-            <button class="color-btn" data-color="5"></button>
+
+        <div class="player-info">
+            <div class="player-stats" id="player1Stats">
+                <div class="player-label">Player 1</div>
+                <div class="player-moves" id="player1Moves">0 moves</div>
+                <div class="player-colors">
+                    <div class="player-color" style="background-color: #e06f8b;"></div>
+                    <div class="player-color" style="background-color: #d84b20;"></div>
+                    <div class="player-color" style="background-color: #e0de40;"></div>
+                </div>
+            </div>
+            <div class="player-stats" id="player2Stats">
+                <div class="player-label">Player 2</div>
+                <div class="player-moves" id="player2Moves">0 moves</div>
+                <div class="player-colors">
+                    <div class="player-color" style="background-color: #7f8c24;"></div>
+                    <div class="player-color" style="background-color: #45adc7;"></div>
+                    <div class="player-color" style="background-color: #554e9c;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-grid" id="gameGrid"></div>
+
+        <div class="color-palette" id="colorPalette">
+            <button class="color-btn player1" data-color="#e06f8b" style="background-color: #e06f8b;"></button>
+            <button class="color-btn player1" data-color="#d84b20" style="background-color: #d84b20;"></button>
+            <button class="color-btn player1" data-color="#e0de40" style="background-color: #e0de40;"></button>
+            <button class="color-btn player2" data-color="#7f8c24" style="background-color: #7f8c24;"></button>
+            <button class="color-btn player2" data-color="#45adc7" style="background-color: #45adc7;"></button>
+            <button class="color-btn player2" data-color="#554e9c" style="background-color: #554e9c;"></button>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Click on a color to flood the grid starting from the top-left corner</li>
+                <li>Connect adjacent cells of the same color to expand your area</li>
+                <li><strong>1 Player:</strong> Complete the grid before running out of moves</li>
+                <li><strong>2 Players:</strong> Take turns - Player 1 uses pink/orange/yellow, Player 2 uses green/blue/purple</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="gameOverlay">
+        <div class="overlay-content">
+            <h2 id="overlayTitle">Game Over!</h2>
+            <p id="overlayMessage">Better luck next time!</p>
+            <div class="player-stats">
+                <div class="player-label">Player 1</div>
+                <div class="player-moves" id="overlayPlayer1Moves">0 moves</div>
+            </div>
+            <div class="player-stats">
+                <div class="player-label">Player 2</div>
+                <div class="player-moves" id="overlayPlayer2Moves">0 moves</div>
+            </div>
+            <button id="playAgainBtn">Play Again</button>
         </div>
     </div>
 
     <script>
-        class GameModel {
-            constructor(size = 21) {
+        // Game Model - Handles game state and logic
+        class FloodItModel {
+            constructor(size = 21, gameMode = 1) {
                 this.size = size;
-                this.maxMoves = 25;
-                this.moves = 0;
-                this.offset = 0;
-                this.colors = [
-                    '#e06f8b', '#d84b20', '#e0de40',
-                    '#7f8c24', '#45adc7', '#554e9c'
+                this.gameMode = gameMode; // 1 for single, 2 for two players
+                this.colors = ['#e06f8b', '#d84b20', '#e0de40', '#7f8c24', '#45adc7', '#554e9c'];
+                this.playerColors = [
+                    ['#e06f8b', '#d84b20', '#e0de40'], // Player 1 colors
+                    ['#7f8c24', '#45adc7', '#554e9c']  // Player 2 colors
                 ];
                 this.grid = [];
-                this.initGrid();
+                this.moves = 0;
+                this.playerMoves = [0, 0]; // Moves for each player
+                this.maxMoves = this.calculateMaxMoves(size);
+                this.gameState = 'playing'; // 'playing', 'won', 'lost'
+                this.currentPlayer = 0; // 0 for player 1, 1 for player 2
+                this.playerScores = [0, 0]; // Scores for each player
+                this.initializeGrid();
             }
 
-            initGrid() {
-                // Create random grid with uniform color distribution
-                for (let i = 0; i < this.size; i++) {
-                    this.grid[i] = [];
-                    for (let j = 0; j < this.size; j++) {
-                        this.grid[i][j] = Math.floor(Math.random() * 6);
+            // Calculate maximum moves based on grid size
+            calculateMaxMoves(size) {
+                const base = Math.floor(size * 1.2);
+                const offset = Math.max(2, Math.floor(size / 10));
+                return base + offset;
+            }
+
+            // Initialize grid with random colors
+            initializeGrid() {
+                this.grid = [];
+                for (let row = 0; row < this.size; row++) {
+                    this.grid[row] = [];
+                    for (let col = 0; col < this.size; col++) {
+                        const randomColorIndex = Math.floor(Math.random() * this.colors.length);
+                        this.grid[row][col] = this.colors[randomColorIndex];
                     }
                 }
+                this.moves = 0;
+                this.playerMoves = [0, 0];
+                this.gameState = 'playing';
+                this.currentPlayer = 0;
+                this.playerScores = [0, 0];
             }
 
+            // Get current color of top-left cell (the origin)
+            getCurrentColor() {
+                return this.grid[0][0];
+            }
+
+            // Flood fill algorithm - changes connected region to new color
             floodFill(newColor) {
-                const target = this.grid[0][0];
-                if (target === newColor) return 0;
+                if (this.gameState !== 'playing' || newColor === this.getCurrentColor()) {
+                    return false; // Invalid move
+                }
 
-                // BFS flood fill algorithm
-                const queue = [[0, 0]];
-                const visited = Array.from({length: this.size}, 
-                    () => new Array(this.size).fill(false));
-                let count = 0;
-
-                while (queue.length > 0) {
-                    const [x, y] = queue.shift();
-                    if (visited[x][y] || this.grid[x][y] !== target) continue;
-                    
-                    visited[x][y] = true;
-                    count++;
-                    
-                    // Check all 4-directional neighbors
-                    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-                    for (const [dx, dy] of directions) {
-                        const nx = x + dx;
-                        const ny = y + dy;
-                        if (nx >= 0 && nx < this.size && 
-                            ny >= 0 && ny < this.size && !visited[nx][ny]) {
-                            queue.push([nx, ny]);
-                        }
+                // In two-player mode, check if the color belongs to the current player
+                if (this.gameMode === 2) {
+                    const playerColors = this.playerColors[this.currentPlayer];
+                    if (!playerColors.includes(newColor)) {
+                        return false; // Player doesn't own this color
                     }
                 }
 
-                // Update grid colors
-                for (let i = 0; i < this.size; i++) {
-                    for (let j = 0; j < this.size; j++) {
-                        if (visited[i][j]) this.grid[i][j] = newColor;
-                    }
-                }
-
-                return count;
-            }
-
-            isWin() {
-                const target = this.grid[0][0];
-                return this.grid.flat().every(c => c === target);
-            }
-        }
-
-        class GameView {
-            constructor(model) {
-                this.model = model;
-                this.canvas = document.getElementById('grid-canvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.movesElement = document.querySelector('.moves');
-                this.offsetElement = document.querySelector('.offset');
-                this.overlay = document.getElementById('overlay');
-                this.setupPalette();
-                this.initCanvas();
-            }
-
-            initCanvas() {
-                // Responsive canvas setup
-                const container = this.canvas.parentElement;
-                const updateSize = () => {
-                    const size = Math.min(container.clientWidth, container.clientHeight);
-                    this.canvas.width = size;
-                    this.canvas.height = size;
-                    this.drawGrid();
-                };
-                updateSize();
-                window.addEventListener('resize', updateSize);
-            }
-
-            drawGrid() {
-                const cellSize = this.canvas.width / this.model.size;
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                const originalColor = this.getCurrentColor();
+                const visited = Array(this.size).fill().map(() => Array(this.size).fill(false));
+                let convertedCells = 0;
                 
-                for (let i = 0; i < this.model.size; i++) {
-                    for (let j = 0; j < this.model.size; j++) {
-                        this.ctx.fillStyle = this.model.colors[this.model.grid[i][j]];
-                        this.ctx.fillRect(
-                            j * cellSize,
-                            i * cellSize,
-                            cellSize,
-                            cellSize
-                        );
+                // Recursive flood fill function
+                const fill = (row, col) => {
+                    // Check boundaries and if already visited
+                    if (row < 0 || row >= this.size || col < 0 || col >= this.size || visited[row][col]) {
+                        return;
+                    }
+                    
+                    // Check if current cell matches original color
+                    if (this.grid[row][col] !== originalColor) {
+                        return;
+                    }
+
+                    // Mark as visited and change color
+                    visited[row][col] = true;
+                    this.grid[row][col] = newColor;
+                    convertedCells++;
+
+                    // Recursively fill adjacent cells (4-directional)
+                    fill(row - 1, col); // Up
+                    fill(row + 1, col); // Down
+                    fill(row, col - 1); // Left
+                    fill(row, col + 1); // Right
+                };
+
+                // Start flood fill from top-left corner
+                fill(0, 0);
+                
+                // Update move counters
+                this.moves++;
+                if (this.gameMode === 2) {
+                    this.playerMoves[this.currentPlayer]++;
+                    this.playerScores[this.currentPlayer] += convertedCells;
+                }
+                
+                // Switch player in two-player mode
+                if (this.gameMode === 2) {
+                    this.currentPlayer = 1 - this.currentPlayer;
+                }
+                
+                // Check win/lose conditions
+                this.checkGameState();
+                
+                return true; // Valid move made
+            }
+
+            // Check if game is won or lost
+            checkGameState() {
+                // Check if entire grid is one color (win condition)
+                const firstColor = this.grid[0][0];
+                let isAllSameColor = true;
+                
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        if (this.grid[row][col] !== firstColor) {
+                            isAllSameColor = false;
+                            break;
+                        }
+                    }
+                    if (!isAllSameColor) break;
+                }
+
+                if (isAllSameColor) {
+                    this.gameState = 'won';
+                } else if (this.moves >= this.maxMoves) {
+                    this.gameState = 'lost';
+                }
+            }
+        }
+
+        // Game View - Handles DOM manipulation and rendering
+        class FloodItView {
+            constructor() {
+                this.gameGrid = document.getElementById('gameGrid');
+                this.player1Moves = document.getElementById('player1Moves');
+                this.player2Moves = document.getElementById('player2Moves');
+                this.player1Stats = document.getElementById('player1Stats');
+                this.player2Stats = document.getElementById('player2Stats');
+                this.colorPalette = document.getElementById('colorPalette');
+                this.overlay = document.getElementById('gameOverlay');
+                this.overlayTitle = document.getElementById('overlayTitle');
+                this.overlayMessage = document.getElementById('overlayMessage');
+                this.overlayPlayer1Moves = document.getElementById('overlayPlayer1Moves');
+                this.overlayPlayer2Moves = document.getElementById('overlayPlayer2Moves');
+                this.playAgainBtn = document.getElementById('playAgainBtn');
+            }
+
+            // Render the game grid
+            renderGrid(model) {
+                // Set grid template based on size
+                this.gameGrid.style.gridTemplateColumns = `repeat(${model.size}, 1fr)`;
+                
+                // Clear existing grid
+                this.gameGrid.innerHTML = '';
+                
+                // Create grid cells
+                for (let row = 0; row < model.size; row++) {
+                    for (let col = 0; col < model.size; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        cell.style.backgroundColor = model.grid[row][col];
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        this.gameGrid.appendChild(cell);
                     }
                 }
             }
 
-            setupPalette() {
-                document.querySelectorAll('.color-btn').forEach((btn, i) => {
-                    btn.style.backgroundColor = this.model.colors[i];
-                });
+            // Update player moves display
+            updatePlayerMoves(player1Moves, player2Moves) {
+                this.player1Moves.textContent = `${player1Moves} moves`;
+                this.player2Moves.textContent = `${player2Moves} moves`;
             }
 
-            updateUI(offset) {
-                this.movesElement.textContent = 
-                    `${this.model.moves} / ${this.model.maxMoves}`;
-                this.offsetElement.textContent = `+${offset}`;
+            // Update current player indicator
+            updateCurrentPlayer(currentPlayer) {
+                if (currentPlayer === 0) {
+                    this.player1Stats.classList.add('active');
+                    this.player2Stats.classList.remove('active');
+                } else {
+                    this.player1Stats.classList.remove('active');
+                    this.player2Stats.classList.add('active');
+                }
             }
 
-            showOverlay(message) {
-                this.overlay.querySelector('.message').textContent = message;
-                this.overlay.style.display = 'flex';
-            }
-        }
-
-        class GameController {
-            constructor(model, view) {
-                this.model = model;
-                this.view = view;
-                this.setupListeners();
-                this.view.drawGrid();
-            }
-
-            setupListeners() {
-                document.querySelectorAll('.color-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (this.model.moves >= this.model.maxMoves || 
-                            this.model.isWin()) return;
-                            
-                        const newColor = parseInt(btn.dataset.color);
-                        const currentColor = this.model.grid[0][0];
-                        
-                        if (newColor !== currentColor) {
-                            const offset = this.model.floodFill(newColor);
-                            this.model.moves++;
-                            this.model.offset = offset;
-                            
-                            this.view.drawGrid();
-                            this.view.updateUI(offset);
-                            
-                            if (this.model.isWin()) {
-                                this.view.showOverlay('You Win!');
-                            } else if (this.model.moves >= this.model.maxMoves) {
-                                this.view.showOverlay('Game Over');
-                            }
+            // Update color palette (disable current color and other player's colors)
+            updateColorPalette(model) {
+                const currentColor = model.getCurrentColor();
+                const colorButtons = this.colorPalette.querySelectorAll('.color-btn');
+                
+                colorButtons.forEach(btn => {
+                    // Reset classes
+                    btn.classList.remove('disabled', 'not-turn');
+                    
+                    // Disable current color
+                    if (btn.dataset.color === currentColor) {
+                        btn.classList.add('disabled');
+                    }
+                    
+                    // In two-player mode, disable other player's colors
+                    if (model.gameMode === 2) {
+                        const playerColors = model.playerColors[model.currentPlayer];
+                        if (!playerColors.includes(btn.dataset.color)) {
+                            btn.classList.add('not-turn');
                         }
-                    });
+                    }
                 });
+            }
+
+            // Show game over overlay
+            showGameOver(model) {
+                if (model.gameState === 'won') {
+                    this.overlay.className = 'overlay win';
+                    this.overlayTitle.textContent = model.gameMode === 1 ? 'You Win!' : 'Game Won!';
+                    
+                    if (model.gameMode === 1) {
+                        this.overlayMessage.textContent = `Completed in ${model.moves} moves!`;
+                    } else {
+                        const winner = model.playerScores[0] > model.playerScores[1] ? 
+                                      "Player 1 wins!" : 
+                                      model.playerScores[1] > model.playerScores[0] ? 
+                                      "Player 2 wins!" : "It's a tie!";
+                                      
+                        this.overlayMessage.innerHTML = `${winner}<br>
+                                                         Player 1 captured ${model.playerScores[0]} cells<br>
+                                                         Player 2 captured ${model.playerScores[1]} cells`;
+                    }
+                } else {
+                    this.overlay.className = 'overlay lose';
+                    this.overlayTitle.textContent = 'Game Over!';
+                    this.overlayMessage.textContent = model.gameMode === 1 ? 
+                        `Used all ${model.maxMoves} moves. Try again!` :
+                        `Game finished in ${model.moves} moves!`;
+                }
+                
+                // Update overlay stats
+                this.overlayPlayer1Moves.textContent = `${model.playerMoves[0]} moves`;
+                this.overlayPlayer2Moves.textContent = `${model.playerMoves[1]} moves`;
+                
+                this.overlay.classList.remove('hidden');
+            }
+
+            // Hide game over overlay
+            hideGameOver() {
+                this.overlay.classList.add('hidden');
             }
         }
 
-        // Initialize game
-        const model = new GameModel();
-        const view = new GameView(model);
-        const controller = new GameController(model, view);
+        // Game Controller - Handles user interactions and coordinates model/view
+        class FloodItController {
+            constructor() {
+                this.model = new FloodItModel(21, 1); // Default 21x21 grid, single player
+                this.view = new FloodItView();
+                this.initializeEventListeners();
+                this.updateView();
+            }
+
+            // Set up event listeners
+            initializeEventListeners() {
+                // Color palette clicks
+                this.view.colorPalette.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('color-btn') && 
+                        !e.target.classList.contains('disabled') && 
+                        !e.target.classList.contains('not-turn')) {
+                        this.handleColorClick(e.target.dataset.color);
+                    }
+                });
+
+                // Game mode change
+                document.getElementById('gameModeSelect').addEventListener('change', (e) => {
+                    this.changeGameMode(parseInt(e.target.value));
+                });
+
+                // Grid size change
+                document.getElementById('gridSizeSelect').addEventListener('change', (e) => {
+                    this.changeGridSize(parseInt(e.target.value));
+                });
+
+                // Reset button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.newGame();
+                });
+
+                // Play again button
+                this.view.playAgainBtn.addEventListener('click', () => {
+                    this.newGame();
+                });
+            }
+
+            // Handle color button click
+            handleColorClick(color) {
+                const moveSuccess = this.model.floodFill(color);
+                if (moveSuccess) {
+                    this.updateView();
+                    
+                    // Check for game end
+                    if (this.model.gameState === 'won' || this.model.gameState === 'lost') {
+                        setTimeout(() => {
+                            this.view.showGameOver(this.model);
+                        }, 300);
+                    }
+                }
+            }
+
+            // Change game mode
+            changeGameMode(mode) {
+                const currentSize = this.model.size;
+                this.model = new FloodItModel(currentSize, mode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Change grid size
+            changeGridSize(size) {
+                const currentMode = this.model.gameMode;
+                this.model = new FloodItModel(size, currentMode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Start new game with current settings
+            newGame() {
+                const currentSize = this.model.size;
+                const currentMode = this.model.gameMode;
+                this.model = new FloodItModel(currentSize, currentMode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Update all view elements
+            updateView() {
+                this.view.renderGrid(this.model);
+                this.view.updatePlayerMoves(
+                    this.model.playerMoves[0],
+                    this.model.playerMoves[1]
+                );
+                
+                if (this.model.gameMode === 2) {
+                    this.view.updateCurrentPlayer(this.model.currentPlayer);
+                } else {
+                    this.view.player1Stats.classList.add('active');
+                    this.view.player2Stats.classList.remove('active');
+                }
+                
+                this.view.updateColorPalette(this.model);
+            }
+        }
+
+        // Initialize game when page loads
+        let gameController;
+        document.addEventListener('DOMContentLoaded', () => {
+            gameController = new FloodItController();
+        });
     </script>
 </body>
 </html>

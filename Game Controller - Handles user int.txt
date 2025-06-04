@@ -1,0 +1,104 @@
+// Game Controller - Handles user interactions and coordinates model/view
+        class FloodItController {
+            constructor() {
+                this.model = new FloodItModel(21, 1); // Default 21x21 grid, single player
+                this.view = new FloodItView();
+                this.initializeEventListeners();
+                this.updateView();
+            }
+
+            // Set up event listeners
+            initializeEventListeners() {
+                // Color palette clicks
+                this.view.colorPalette.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('color-btn') && 
+                        !e.target.classList.contains('disabled') && 
+                        !e.target.classList.contains('not-turn')) {
+                        this.handleColorClick(e.target.dataset.color);
+                    }
+                });
+
+                // Game mode change
+                document.getElementById('gameModeSelect').addEventListener('change', (e) => {
+                    this.changeGameMode(parseInt(e.target.value));
+                });
+
+                // Grid size change
+                document.getElementById('gridSizeSelect').addEventListener('change', (e) => {
+                    this.changeGridSize(parseInt(e.target.value));
+                });
+
+                // Reset button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.newGame();
+                });
+            }
+
+            // Handle color button click
+            handleColorClick(color) {
+                const moveSuccess = this.model.floodFill(color);
+                if (moveSuccess) {
+                    this.updateView();
+                    
+                    // Check for game end
+                    if (this.model.gameState === 'won') {
+                        setTimeout(() => {
+                            this.view.showGameOver(this.model);
+                        }, 300);
+                    } else if (this.model.gameState === 'lost') {
+                        setTimeout(() => {
+                            this.view.showGameOver(this.model);
+                        }, 300);
+                    }
+                }
+            }
+
+            // Change game mode
+            changeGameMode(mode) {
+                const currentSize = this.model.size;
+                this.model = new FloodItModel(currentSize, mode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Change grid size
+            changeGridSize(size) {
+                const currentMode = this.model.gameMode;
+                this.model = new FloodItModel(size, currentMode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Start new game with current settings
+            newGame() {
+                const currentSize = this.model.size;
+                const currentMode = this.model.gameMode;
+                this.model = new FloodItModel(currentSize, currentMode);
+                this.updateView();
+                this.view.hideGameOver();
+            }
+
+            // Update all view elements
+            updateView() {
+                this.view.renderGrid(this.model);
+                this.view.updateMovesCounter(this.model.moves, this.model.maxMoves, this.model.gameMode);
+                this.view.updateCurrentPlayer(this.model.currentPlayer, this.model.gameMode);
+                this.view.updateOffset(this.model.getOffset(), this.model.gameMode);
+                this.view.updateColorPalette(this.model);
+            }
+        }        <div class="game-header">
+            <h1>Flood It</h1>
+            <div class="game-controls">
+                <select class="game-mode-select" id="gameModeSelect">
+                    <option value="1">1 Player</option>
+                    <option value="2">2 Player</option>
+                </select>
+                <select class="grid-size-select" id="gridSizeSelect">
+                    <option value="12">12×12</option>
+                    <option value="18">18×18</option>
+                    <option value="21" selected>21×21</option>
+                    <option value="24">24×24</option>
+                </select>
+                <button class="reset-btn" id="resetBtn">Reset</button>
+            </div>
+        </div>
